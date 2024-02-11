@@ -9,8 +9,6 @@ import io
 from PIL import Image
 import base64
 
-openai.api_key = settings.OPENAI_API_KEY
-
 # Set OpenAI API key
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -36,16 +34,25 @@ class ChatGPTView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def process_prompt(self, text, image):
+        messages = [{"role": "user", "content": text}]
+
         if image:
             image_b64 = self.convert_image_to_base64(image)
-            prompt = {"image": image_b64, "text": text}
-        else:
-            prompt = text
+            # Assuming the model you're using supports image inputs, adjust as necessary.
+            # Add the image as a separate message following the OpenAI format for images.
+            messages.append({
+                "role": "user",
+                "content": {
+                    "type": "image",
+                    "data": f"data:image/jpeg;base64,{image_b64}"
+                }
+            })
 
         try:
+            # Ensure you're using the correct model that supports text and image inputs
             response = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[{"role": "user", "content": prompt}]
+                model="gpt-4-vision-preview",  # Replace with the actual model name
+                messages=messages
             )
             return {"response": response['choices'][0]['message']['content']}
         except Exception as e:
@@ -59,6 +66,7 @@ class ChatGPTView(APIView):
         image.save(buffered, format="JPEG")
         img_byte = buffered.getvalue()
         img_base64 = base64.b64encode(img_byte).decode('utf-8')
+        print(img_base64)
         return img_base64
 
     def transcribe_audio(self, audio_file):
