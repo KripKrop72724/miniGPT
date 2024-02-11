@@ -11,11 +11,14 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import environ
+import os
+from dotenv import load_dotenv
 
-env = environ.Env()
-environ.Env.read_env()
-OPENAI_API_KEY = env('OPENAI_API_KEY')
+# Assuming your .env file is in the same directory as settings.py
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+print(dotenv_path)
+load_dotenv(dotenv_path)
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
