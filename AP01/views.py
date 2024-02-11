@@ -18,6 +18,15 @@ class ChatGPTView(APIView):
         if serializer.is_valid():
             text = serializer.validated_data.get('text', '')
             image = serializer.validated_data.get('image', None)
+            audio = serializer.validated_data.get('audio', None)
+
+            if audio:
+                # Process the audio file
+                transcription = self.transcribe_audio(audio)
+                if transcription.get('error'):
+                    return Response({"error": transcription['error']}, status=status.HTTP_400_BAD_REQUEST)
+                text += " " + transcription.get('transcript', '')
+
             response_data = self.process_prompt(text, image)
             return Response(response_data, status=status.HTTP_200_OK)
         else:
@@ -25,15 +34,13 @@ class ChatGPTView(APIView):
 
     def process_prompt(self, text, image):
         if image:
-            with image.open() as img:
-                image_file = ImageFile(img)
-                image_b64 = self.convert_image_to_base64(image_file)
-                prompt = {
-                    "prompt": {"image": image_b64, "text": text},
-                    "n": 1,
-                    "stop": None,
-                    "temperature": 0.7,
-                }
+            image_b64 = self.convert_image_to_base64(image)
+            prompt = {
+                "prompt": {"image": image_b64, "text": text},
+                "n": 1,
+                "stop": None,
+                "temperature": 0.7,
+            }
         else:
             prompt = {"prompt": text, "n": 1, "stop": None, "temperature": 0.7}
 
@@ -43,14 +50,14 @@ class ChatGPTView(APIView):
         except Exception as e:
             return {"error": str(e)}
 
-    def convert_image_to_base64(image_file):
+    def convert_image_to_base64(self, image_file):
         # Open the image file
         image = Image.open(image_file)
         # Convert the image to RGB format (if not already in this format)
         if image.mode != 'RGB':
             image = image.convert('RGB')
         # Create a bytes buffer for the image
-        buffered = io.BytesIO()
+        buffered = BytesIO()
         # Save the image to the buffer
         image.save(buffered, format="JPEG")
         # Get the byte value of the image
@@ -60,3 +67,14 @@ class ChatGPTView(APIView):
         # Convert base64 bytes to string
         img_str = img_base64.decode('utf-8')
         return img_str
+
+    def transcribe_audio(self, audio_file):
+        try:
+            response = openai.Audio.transcribe(
+                model="whisper-1",
+                file=audio_file,
+                response_format="text"
+            )
+            return {"transcript": response['data']['text']}
+        except Exception as e:
+            return {"error": str(e)}
