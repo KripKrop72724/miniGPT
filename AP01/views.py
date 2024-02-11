@@ -15,7 +15,6 @@ openai.api_key = settings.OPENAI_API_KEY
 
 class ChatGPTView(APIView):
     def post(self, request, *args, **kwargs):
-        openai.api_key = settings.OPENAI_API_KEY
         serializer = ChatPromptSerializer(data=request.data)
         if serializer.is_valid():
             text = serializer.validated_data.get('text', '')
@@ -34,26 +33,27 @@ class ChatGPTView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def process_prompt(self, text, image):
-        messages = [{"role": "user", "content": text}]
-
         if image:
+            # Convert image to base64 and prepare the payload for an image prompt
             image_b64 = self.convert_image_to_base64(image)
-            # Assuming the model you're using supports image inputs, adjust as necessary.
-            # Add the image as a separate message following the OpenAI format for images.
-            messages.append({
-                "role": "user",
-                "content": {
-                    "type": "image",
-                    "data": f"data:image/jpeg;base64,{image_b64}"
-                }
-            })
+            model = "gpt-4-vision-preview"
+            messages = [
+                # {"role": "user", "content": text},
+                {"role": "user", "content": [{"type": "text", "text": text}, {"type": "image_url", "image_url": {
+                    "url": f"data:image/jpeg;base64,{image_b64}"}}]}
+            ]
+        else:
+            # If no image is provided, use a text-based prompt
+            model = "gpt-4"
+            messages = [{"role": "user", "content": text}]
 
         try:
-            # Ensure you're using the correct model that supports text and image inputs
             response = openai.ChatCompletion.create(
-                model="gpt-4-vision-preview",  # Replace with the actual model name
-                messages=messages
+                model=model,
+                messages=messages,
+                max_tokens=4096
             )
+            print(response)
             return {"response": response['choices'][0]['message']['content']}
         except Exception as e:
             return {"error": str(e)}
@@ -66,7 +66,6 @@ class ChatGPTView(APIView):
         image.save(buffered, format="JPEG")
         img_byte = buffered.getvalue()
         img_base64 = base64.b64encode(img_byte).decode('utf-8')
-        print(img_base64)
         return img_base64
 
     def transcribe_audio(self, audio_file):
@@ -76,7 +75,6 @@ class ChatGPTView(APIView):
                 file=audio_file,
                 response_format="text"
             )
-            print(response)
-            return {"transcript": response}
+            return {"transcript": response['data']['text']}
         except Exception as e:
             return {"error": str(e)}
