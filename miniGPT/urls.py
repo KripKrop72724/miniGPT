@@ -14,13 +14,19 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
 from AP01.views import ChatGPTView
+from miniGPT import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('master/chat/', ChatGPTView.as_view(), name='chat-gpt'),
     path("master/", include("AP01.api_urls", namespace="apis")),
 ]
+
+# Serving the media files in development mode
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

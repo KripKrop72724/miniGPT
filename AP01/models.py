@@ -14,7 +14,7 @@ class Prompt(models.Model):
     text = models.TextField()
     response = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    file = models.FileField(upload_to='prompts_files/', null=True, blank=True)
+    file = models.FileField(upload_to='files/', null=True, blank=True)
 
     def __str__(self):
         return f"Prompt in {self.conversation.name}"
