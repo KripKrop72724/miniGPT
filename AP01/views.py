@@ -8,10 +8,11 @@ from django.conf import settings
 from django.core.files.images import ImageFile
 
 from AP01.models import Conversation, Prompt
-from AP01.serializer import ChatPromptSerializer, ConversationSerializer, PromptSerializer
+from AP01.serializer import ChatPromptSerializer, ConversationSerializer, PromptSerializer, UserSerializer
 import io
 from PIL import Image
 import base64
+from django.contrib.auth import authenticate
 
 # Set OpenAI API key
 openai.api_key = settings.OPENAI_API_KEY
@@ -115,3 +116,22 @@ class ConversationViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SignupView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'User created successfully'}, status=201)
+        return Response(serializer.errors, status=400)
+
+
+class LoginView(APIView):
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(username=username, password=password)
+        if user:
+            return Response({'message': 'Login successful'}, status=200)
+        return Response({'message': 'Invalid credentials'}, status=400)

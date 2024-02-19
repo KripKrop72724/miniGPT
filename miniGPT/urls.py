@@ -18,13 +18,15 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
-from AP01.views import ChatGPTView
+from AP01.views import ChatGPTView, SignupView, LoginView
 from miniGPT import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('master/chat/', ChatGPTView.as_view(), name='chat-gpt'),
     path("master/", include("AP01.api_urls", namespace="apis")),
+    path('auth/signup', SignupView.as_view(), name='signup'),
+    path('auth/login', LoginView.as_view(), name='login'),
 ]
 
 # Serving the media files in development mode

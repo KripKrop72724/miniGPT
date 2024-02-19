@@ -1,3 +1,4 @@
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 
 
@@ -18,3 +19,8 @@ class Prompt(models.Model):
 
     def __str__(self):
         return f"Prompt in {self.conversation.name}"
+
+
+class User(models.Model):
+    username = models.CharField(max_length=150, unique=True)
+    password = models.CharField(max_length=128)
